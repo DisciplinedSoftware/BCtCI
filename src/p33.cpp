@@ -10,35 +10,40 @@
 #include <iostream>
 #include <vector>
 
-std::vector<std::array<int, 3>> get_triplets(std::vector<int> data) {
+std::vector<std::array<int, 3>> get_unique_triplets(std::vector<int> data) {
     std::vector<std::array<int, 3>> triplets;
-
-    auto const size = data.size();
-    for (size_t i = 0; i < size; ++i) {
-        auto const di = data[i];
-        for (size_t j = i+1; j < size; ++j) {
-            auto const dj = data[j];
-            auto const partial_sum = di + dj;
-            for (size_t k = j+1; k < size; ++k) {
-                auto const dk = data[k];
-                auto const sum = partial_sum + dk;
-                if (sum == 0) {
-                    std::array<int, 3> triplet({di, dj, dk});
-                    std::ranges::sort(triplet);
-                    triplets.emplace_back(triplet);
-                }
+    std::ranges::sort(data);
+    
+    for (size_t i = 0; i < data.size(); ++i) {
+        // Skip duplicates for i
+        if (i > 0 && data[i] == data[i-1]) continue;
+        
+        size_t left = i + 1;
+        size_t right = data.size() - 1;
+        
+        while (left < right) {
+            int sum = data[i] + data[left] + data[right];
+            
+            if (sum == 0) {
+                triplets.push_back({data[i], data[left], data[right]});
+                
+                // Skip duplicates for left
+                while (left < right && data[left] == data[left + 1]) left++;
+                // Skip duplicates for right
+                while (left < right && data[right] == data[right - 1]) right--;
+                
+                left++;
+                right--;
+            }
+            else if (sum < 0) {
+                left++;
+            }
+            else {
+                right--;
             }
         }
     }
-
-    return triplets;
-}
-
-std::vector<std::array<int, 3>> get_unique_triplets(std::vector<int> data) {
-    auto triplets = get_triplets(data);
-    std::ranges::sort(triplets);
-    auto r = std::ranges::unique(triplets);
-    triplets.erase(r.begin(), r.end());
+    
     return triplets;
 }
 
