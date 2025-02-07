@@ -108,7 +108,8 @@ std::vector<std::array<int, 3>> get_unique_triplets(std::vector<int> data) {
     get_unique_triplets(data, i, triplets);
 
     auto old_di = data[i];
-    for (size_t i = 1; i < size - 2; ++i) {
+
+    for (i = 1; i < size - 2; ++i) {
         auto const di = data[i];
 
         if (di == old_di) {
