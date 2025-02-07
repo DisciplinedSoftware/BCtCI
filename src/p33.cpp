@@ -15,9 +15,46 @@
 #include <limits>
 #include <optional>
 
-std::vector<int> generate_random_vector(size_t size, int min_value = std::numeric_limits<int>::lowest(), int max_value = std::numeric_limits<int>::max()) {
+std::vector<std::array<int, 3>> get_unique_triplets_baseline(std::vector<int> data) {
+    std::vector<std::array<int, 3>> triplets;
+    std::ranges::sort(data);
+    
+    for (size_t i = 0; i < data.size(); ++i) {
+        // Skip duplicates for i
+        if (i > 0 && data[i] == data[i-1]) continue;
+        
+        size_t left = i + 1;
+        size_t right = data.size() - 1;
+        
+        while (left < right) {
+            int sum = data[i] + data[left] + data[right];
+            
+            if (sum == 0) {
+                triplets.push_back({data[i], data[left], data[right]});
+                
+                // Skip duplicates for left
+                while (left < right && data[left] == data[left + 1]) left++;
+                // Skip duplicates for right
+                while (left < right && data[right] == data[right - 1]) right--;
+                
+                left++;
+                right--;
+            }
+            else if (sum < 0) {
+                left++;
+            }
+            else {
+                right--;
+            }
+        }
+    }
+    
+    return triplets;
+}
+
+std::vector<int> generate_random_vector(size_t size, std::optional<int> seed = std::nullopt, int min_value = std::numeric_limits<int>::lowest(), int max_value = std::numeric_limits<int>::max()) {
     // Create a random number generator
-    std::mt19937 gen(42);
+    std::mt19937 gen(seed.has_value() ? seed.value() : 42);
 
     // Create a distribution for the desired range
     std::uniform_int_distribution<int> dist(min_value, max_value);
@@ -67,14 +104,20 @@ std::vector<std::array<int, 3>> get_unique_triplets(std::vector<int> data) {
     std::ranges::sort(data);
 
     auto const size = data.size();
-    for (size_t i = 0; i < size - 2; ++i) {
+    size_t i = 0;
+    get_unique_triplets(data, i, triplets);
+
+    auto old_di = data[i];
+    for (size_t i = 1; i < size - 2; ++i) {
         auto const di = data[i];
 
-        if (i > 0 && di == data[i-1]) {
+        if (di == old_di) {
             continue;
         }
 
         get_unique_triplets(data, i, triplets);
+
+        old_di = di;
     }
 
     return triplets;
@@ -84,15 +127,20 @@ int main() {
     auto const result = get_unique_triplets({-1, 0, 1, 2, -1, -4});
     std::vector<std::array<int, 3>> const reference = {{-1, -1, 2}, {-1, 0, 1}};
 
-    for (auto const & triplet : result) {
-        std::cout << "[ " << triplet[0] << ", " << triplet[1] << ", " << triplet[2] << " ]" << std::endl;
-    }
+    // for (auto const & triplet : result) {
+    //     std::cout << "[ " << triplet[0] << ", " << triplet[1] << ", " << triplet[2] << " ]" << std::endl;
+    // }
 
     std::cout << std::boolalpha << (reference == result) << std::endl;
 
+    auto data_baseline = generate_random_vector(1'000);
+    auto const result_benchmark = get_unique_triplets(data_baseline);
+    auto const reference_benchmark = get_unique_triplets_baseline(data_baseline);
+    std::cout << std::boolalpha << (reference_benchmark == result_benchmark) << std::endl;
+
     std::vector<std::chrono::microseconds> times;
     for (int i = 0; i < 10; ++i) {
-        auto&& data = generate_random_vector(1'000);
+        auto&& data = generate_random_vector(1'000, i);
 
         auto const start = std::chrono::high_resolution_clock::now();
         get_unique_triplets(std::move(data));
